@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess Opening Trainer</title>
+    <link rel="stylesheet"
+          href="https://unpkg.com/@chrisoakman/chessboard2@0.5.0/dist/chessboard2.min.css"
+          integrity="sha384-47VeTDpmy4yT21gKPXQcLQYQZwlmz27gEH5NTrOmTk3G/SGvMyltclOW/Q8uE+sL"
+          crossorigin="anonymous">
+    <link rel="prefetch" href="/about/index.html">
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+            color: #333;
+            transition: background-color 0.3s ease, color 0.3s ease, opacity 0.3s ease;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            animation: fadeIn 0.5s ease forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #fff;
+            padding: 10px 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            transform: translateY(-100%);
+            animation: slideIn 0.5s ease forwards 0.2s;
+        }
+        @keyframes slideIn {
+            from { transform: translateY(-100%); }
+            to { transform: translateY(0); }
+        }
+        .logo {
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            text-decoration: none;
+        }
+        .logo img {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+            padding-bottom: 4px;
+        }
+        .logo span {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1a2b3c;
+            line-height: 40px;
+        }
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .nav-link {
+            color: #1a2b3c;
+            text-decoration: none;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+        .nav-link:hover {
+            color: #3498db;
+        }
+        .container {
+            max-width: 1100px; /* Adjusted from 1200px to fit narrower columns */
+            margin: 10px auto;
+            padding: 0 20px;
+            height: calc(100vh - 150px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeUp 0.5s ease forwards 0.4s;
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        h1 {
+            text-align: center;
+            color: #1a2b3c;
+            margin: 10px 0;
+            font-size: 2rem;
+            font-weight: 600;
+        }
+        .color-selection {
+            text-align: center;
+            margin: 0 auto;
+            padding: 10px 0;
+            height: auto;
+            width: 100%;
+            max-width: 600px;
+            transition: height 0.3s ease, padding 0.3s ease, margin 0.3s ease;
+        }
+        .color-selection.hidden {
+            height: 0;
+            overflow: hidden;
+            padding: 0;
+            margin: 0;
+        }
+        .color-prompt {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #1a2b3c;
+            margin: 0 0 15px 0;
+        }
+        .color-options {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 0;
+        }
+        .color-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            padding: 15px;
+            border-radius: 12px;
+            transition: background-color 0.3s ease;
+        }
+        .color-option:hover {
+            background-color: #e0e0e0;
+        }
+        .king-icon {
+            width: 80px;
+            height: 80px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+        .white-king {
+            background-image: url('https://upload.wikimedia.org/wikipedia/commons/4/42/Chess_klt45.svg');
+        }
+        .black-king {
+            background-image: url('https://upload.wikimedia.org/wikipedia/commons/f/f0/Chess_kdt45.svg');
+        }
+        .color-option span {
+            font-size: 1rem;
+            margin-top: 8px;
+            color: #1a2b3c;
+        }
+        .opening-selection {
+            text-align: center;
+            margin: 0 auto;
+            padding: 10px 0;
+            height: 0;
+            overflow: hidden;
+            max-width: 800px;
+            transition: height 0.3s ease, padding 0.3s ease, margin 0.3s ease;
+        }
+        .opening-selection.visible {
+            height: auto;
+            padding: 10px 0;
+            margin: 0 auto;
+        }
+        #openingPrompt {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #1a2b3c;
+        }
+        .opening-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin: 0 auto;
+        }
+        .opening-buttons button {
+            padding: 15px 20px;
+            border: none;
+            border-radius: 8px;
+            background-color: #3498db;
+            color: #000;
+            font-size: 1.2rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .opening-buttons button:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+        }
+        .main-content {
+            height: 0;
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            transition: height 0.3s ease;
+        }
+        .main-content.visible {
+            height: auto;
+        }
+        .opening-summary {
+            width: 300px; /* Matched to .right-panel */
+            height: 400px;
+            background-color: #fff;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            font-size: 1rem;
+            color: #333;
+            overflow-y: auto;
+        }
+        .opening-summary .summary-text {
+            align-self: flex-start;
+        }
+        .opening-summary .stats-text {
+            align-self: flex-end;
+        }
+        .dark .opening-summary {
+            background-color: #2a2a2a;
+            color: #f0f0f0;
+        }
+        .chessboard-container {
+            width: 400px !important;
+            max-width: 400px;
+            background-color: #fff;
+            border-radius: 12px;
+            padding: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        #board {
+            width: 100% !important;
+            max-width: 400px;
+            height: 400px;
+        }
+        .right-panel {
+            width: 300px;
+            display: flex;
+            flex-direction: column;
+        }
+        #movesDisplay {
+            background-color: #fff;
+            padding: 12px;
+            border-radius: 12px;
+            height: 360px;
+            overflow-y: auto;
+            color: #333;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: relative;
+            scroll-behavior: smooth;
+        }
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        th, td {
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            font-weight: 600;
+            background-color: #f5f5f5;
+            color: #333;
+            border-bottom: 2px solid #ddd;
+        }
+        th:nth-child(1), td:nth-child(1) {
+            width: 40px;
+        }
+        .current-move {
+            font-weight: bold;
+            background-color: #66b3ff;
+            color: #000;
+            border-radius: 4px;
+            padding: 2px 4px;
+        }
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            width: 100%;
+        }
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background-color: #3498db;
+            color: #000;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+        button:hover:not(:disabled) {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+        }
+        #themeToggle {
+            background-color: #fff;
+            color: #1a2b3c;
+            padding: 8px 16px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            font-size: 1.2rem;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        #themeToggle:hover:not(:disabled) {
+            background-color: #e0e0e0;
+        }
+        footer {
+            text-align: center;
+            padding: 25px 0;
+            background-color: #fff;
+            color: #1a2b3c;
+            font-size: 0.9rem;
+            box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeUp 0.5s ease forwards 0.6s;
+        }
+        body.dark {
+            background-color: #1a1a1a;
+            color: #f0f0f0;
+        }
+        .dark .navbar {
+            background-color: #2d2d2d;
+        }
+        .dark .logo span, .dark .nav-link {
+            color: #e0e0e0;
+        }
+        .dark .nav-link:hover {
+            color: #66b3ff;
+        }
+        .dark h1, .dark h2 {
+            color: #f0f0f0;
+        }
+        .dark .color-prompt, .dark .color-option span {
+            color: #f0f0f0;
+        }
+        .dark .color-option:hover {
+            background-color: #4a5568;
+        }
+        .dark select {
+            background-color: #2a2a2a;
+            color: #f0f0f0;
+            border-color: #444;
+        }
+        .dark #movesDisplay {
+            background-color: #2a2a2a;
+            border-color: #444;
+            color: #f0f0f0;
+        }
+        .dark th {
+            background-color: #333;
+            color: #f0f0f0;
+            border-bottom: 2px solid #555;
+        }
+        .dark .current-move {
+            background-color: #1e90ff;
+            color: #000;
+        }
+        .dark #themeToggle {
+            background-color: #34495e;
+            color: #f0f0f0;
+        }
+        .dark #themeToggle:hover:not(:disabled) {
+            background-color: #415d77;
+        }
+        .dark button {
+            color: #000;
+        }
+        .dark footer {
+            background-color: #2d2d2d;
+            color: #e0e0e0;
+        }
+        .error-message {
+            color: #e53e3e;
+            text-align: center;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="logo">
+            <img src="https://www.chess.com/chess-themes/pieces/neo/150/bn.png" alt="Chessology Logo">
+            <span>Chessology!</span>
+        </a>
+        <div class="nav-links">
+            <a href="/" class="nav-link">Home</a>
+            <a href="/about" class="nav-link">About</a>
+            <button id="themeToggle" aria-label="Toggle between light and dark theme">☀️</button>
+        </div>
+    </nav>
+    <div class="container">
+        <h1 id="title" tabindex="0">Chess Opening Trainer</h1>
+        <div id="colorSelection" class="color-selection" role="region" aria-label="Color selection">
+            <p class="color-prompt">What color do you want to train today?</p>
+            <div class="color-options">
+                <div class="color-option" data-color="white">
+                    <div class="king-icon white-king"></div>
+                    <span>White</span>
+                </div>
+                <div class="color-option" data-color="black">
+                    <div class="king-icon black-king"></div>
+                    <span>Black</span>
+                </div>
+            </div>
+        </div>
+        <div id="openingSelection" class="opening-selection" role="region" aria-label="Opening selection">
+            <h2 id="openingPrompt">Choose an Opening</h2>
+            <div id="openingButtons" class="opening-buttons"></div>
+        </div>
+        <div id="mainContent" class="main-content">
+            <div class="opening-summary" id="openingSummary">
+                <div class="summary-text" id="summaryText"></div>
+                <div class="stats-text" id="statsText"></div>
+            </div>
+            <div class="chessboard-container" role="region" aria-label="Chessboard">
+                <div id="board" tabindex="0"></div>
+            </div>
+            <div class="right-panel">
+                <div id="movesDisplay" role="log" aria-live="polite" aria-label="Move list"></div>
+                <div class="controls" role="region" aria-label="Navigation controls">
+                    <button id="prevBtn" disabled aria-label="Go to previous move">Previous</button>
+                    <button id="nextBtn" disabled aria-label="Go to next move">Next</button>
+                    <button id="resetBtn" disabled aria-label="Reset to start position">Reset</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <footer>
+        © 2025 Chessology! Created by Caddy Khaw
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.2/chess.min.js"></script>
+    <script src="https://unpkg.com/@chrisoakman/chessboard2@0.5.0/dist/chessboard2.min.js"
+            integrity="sha384-/KwQCjA1GWovZNV3QDVtvSMDzO4reGgarF/RqHipr7hIUElH3r5zNl9WEPPOBRIF"
+            crossorigin="anonymous"></script>
+    <script src="moves.js"></script>
+    <script>
+        let currentOpening = [];
+        let slicedMoves = [];
+        let currentPosition = -1;
+        let chess;
+        let board;
+        let selectedColor = 'white';
+
+        function initializeApp() {
+            if (typeof Chess === 'undefined' || typeof Chessboard2 === 'undefined') {
+                document.getElementById('movesDisplay').innerHTML = '<p class="error-message">Error: Chess libraries failed to load. Please check your internet connection or CDN availability.</p>';
+                console.error('Chess.js or Chessboard2 failed to load.');
+                return;
+            }
+
+            chess = new Chess();
+            const boardConfig = {
+                draggable: false,
+                position: chess.fen(),
+                moveSpeed: 'slow',
+                orientation: 'white'
+            };
+            board = Chessboard2('board', boardConfig);
+            console.log('Initial FEN:', chess.fen());
+            board.position(chess.fen(), false);
+
+            const colorOptions = document.querySelectorAll('.color-option');
+            if (colorOptions.length === 0) {
+                console.error('No .color-option elements found in the DOM');
+                return;
+            }
+            colorOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    selectedColor = option.getAttribute('data-color');
+                    board.orientation(selectedColor);
+                    document.getElementById('colorSelection').classList.add('hidden');
+                    document.getElementById('openingSelection').classList.add('visible');
+                    populateOpenings(selectedColor);
+                });
+            });
+
+            showMove();
+        }
+
+        function populateOpenings(color) {
+            const openingButtons = document.getElementById('openingButtons');
+            if (!openingButtons) {
+                console.error('Element #openingButtons not found in the DOM');
+                return;
+            }
+            openingButtons.innerHTML = '';
+            const openingsList = openings[color];
+            for (let opening in openingsList) {
+                const button = document.createElement('button');
+                button.textContent = opening;
+                button.addEventListener('click', () => selectOpening(color, opening));
+                openingButtons.appendChild(button);
+            }
+        }
+
+        function sliceMoves(openingMoves) {
+            slicedMoves = [];
+            openingMoves.forEach((movePair) => {
+                const parts = movePair.split(' ');
+                const moveNum = parts[0];
+                const whiteMove = parts[1];
+                const blackMove = parts[2] || '';
+                slicedMoves.push({ moveNum, white: whiteMove, black: blackMove });
+            });
+        }
+
+        function selectOpening(side, selectedOpening) {
+            chess.reset();
+            currentOpening = openings[side][selectedOpening].moves;
+            sliceMoves(currentOpening);
+            currentPosition = -1;
+            document.getElementById('openingSelection').classList.remove('visible');
+            const mainContent = document.getElementById('mainContent');
+            mainContent.classList.add('visible');
+            document.title = `Chess Opening Trainer - ${selectedOpening}`;
+            document.getElementById('title').textContent = `Chess Opening Trainer - ${selectedOpening}`;
+            document.getElementById('summaryText').textContent = openings[side][selectedOpening].summary;
+            document.getElementById('statsText').textContent = openings[side][selectedOpening].stats;
+            setTimeout(() => {
+                console.log('Setting initial position, FEN:', chess.fen());
+                board.position(chess.fen(), false);
+                board.resize();
+            }, 50);
+            document.getElementById('prevBtn').disabled = false;
+            document.getElementById('nextBtn').disabled = false;
+            document.getElementById('resetBtn').disabled = false;
+            showMove();
+        }
+
+        function showMove() {
+            const movesDisplay = document.getElementById('movesDisplay');
+            if (!movesDisplay) {
+                console.error('Element #movesDisplay not found in the DOM');
+                return;
+            }
+            let movesHtml = '<table><thead><tr><th>Move</th><th>White</th><th>Black</th></tr></thead><tbody>';
+            
+            if (currentPosition === -1) {
+                movesDisplay.innerHTML = '<p>Press "Next" to start the opening</p>';
+            } else {
+                slicedMoves.forEach((move, index) => {
+                    const whiteIndex = index * 2;
+                    const blackIndex = whiteIndex + 1;
+                    const isWhiteCurrent = whiteIndex === currentPosition;
+                    const isBlackCurrent = blackIndex === currentPosition;
+                    movesHtml += `<tr>
+                        <td>${move.moveNum}</td>
+                        <td ${isWhiteCurrent ? 'class="current-move"' : ''}>${move.white}</td>
+                        <td ${isBlackCurrent ? 'class="current-move"' : ''}>${move.black || ''}</td>
+                    </tr>`;
+                });
+                movesHtml += '</tbody></table>';
+                movesDisplay.innerHTML = movesHtml;
+
+                setTimeout(() => {
+                    const highlightedMove = movesDisplay.querySelector('.current-move');
+                    if (highlightedMove) {
+                        highlightedMove.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        console.log('Scrolling to move:', highlightedMove.textContent);
+                    } else {
+                        console.log('No highlighted move found');
+                    }
+                }, 200);
+            }
+
+            document.getElementById('prevBtn').disabled = currentPosition <= -1;
+            document.getElementById('nextBtn').disabled = currentPosition >= (slicedMoves.length * 2) - 1;
+        }
+
+        function nextMove() {
+            if (currentPosition < (slicedMoves.length * 2) - 1) {
+                currentPosition++;
+                const moveIndex = Math.floor(currentPosition / 2);
+                const isWhiteMove = currentPosition % 2 === 0;
+                const move = isWhiteMove ? slicedMoves[moveIndex].white : slicedMoves[moveIndex].black;
+                console.log(`Next Move: ${move}, Position: ${currentPosition}, FEN Before: ${chess.fen()}`);
+                const result = chess.move(move);
+                if (result) {
+                    console.log(`Move Successful: ${move}, FEN After: ${chess.fen()}`);
+                    board.position(chess.fen(), true);
+                } else {
+                    console.error(`Move Failed: ${move}, FEN: ${chess.fen()}`);
+                    currentPosition--;
+                }
+                showMove();
+            } else {
+                console.log('No more moves to play');
+            }
+        }
+
+        function prevMove() {
+            if (currentPosition > -1) {
+                console.log(`Previous Move, Position: ${currentPosition}, FEN Before: ${chess.fen()}`);
+                chess.undo();
+                currentPosition--;
+                console.log(`Undo Successful, Position: ${currentPosition}, FEN After: ${chess.fen()}`);
+                board.position(chess.fen(), true);
+                showMove();
+            } else {
+                console.log('At start position');
+            }
+        }
+
+        function resetTrainer() {
+            console.log('Reset triggered at:', new Date().toISOString());
+            chess.reset();
+            currentPosition = -1;
+            board.position(chess.fen(), false);
+            console.log('Reset to start position, FEN:', chess.fen());
+            showMove();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeApp();
+            document.getElementById('prevBtn').addEventListener('click', prevMove);
+            document.getElementById('nextBtn').addEventListener('click', nextMove);
+            document.getElementById('resetBtn').addEventListener('click', resetTrainer);
+            document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+        });
+
+        function toggleTheme() {
+            const body = document.body;
+            const toggleButton = document.getElementById('themeToggle');
+            if (!body.classList.contains('dark')) {
+                body.classList.add('dark');
+                toggleButton.textContent = '🌙';
+                toggleButton.setAttribute('aria-label', 'Switch to dark theme');
+            } else {
+                body.classList.remove('dark');
+                toggleButton.textContent = '☀️';
+                toggleButton.setAttribute('aria-label', 'Switch to light theme');
+            }
+        }
+    </script>
+    <script src="transition.js"></script>
+    <script src="theme.js"></script>
+</body>
+</html>
